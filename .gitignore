@@ -1,0 +1,6 @@
+# OS-specific
+.DS_Store
+
+# Vagrant meta-data.
+.vagrant
+
