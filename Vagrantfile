@@ -13,6 +13,9 @@ Vagrant::Config.run do |config|
   # Add a host-only network adapter, for samba etc.
   config.vm.network :hostonly, "192.168.33.10"
 
+  # Ensure the project directory is shared with the guest.
+  config.vm.share_folder "osm_project", "/mnt/osm_project", "./project"
+
 
   # Configure puppet.
   box_path = File.expand_path(__FILE__ + '/..')

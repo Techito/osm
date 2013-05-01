@@ -40,4 +40,40 @@ node osm_template {
   # package {'osmosis': }
 
 
+  # The rails_port will be exported to /mnt/osm_project/rails_port by the
+  # Vagrantfile.
+  # Mount this to /srv/rails_port.
+  file {'/srv/rails_port':
+    ensure => 'directory',
+  }
+  mount {'/srv/rails_port':
+    ensure => 'mounted',
+    name => '/srv/rails_port',
+    device => '/mnt/osm_project/rails_port',
+    fstype => 'none',
+    options => 'rw,bind',
+    require => File['/srv/rails_port'],
+  }
+
+  # Populate rails_port/config/database.yml.
+  #
+  # The databases used are:
+  # Dev:  openstreetmap
+  # Test: osm_test
+  # Prod: osm
+  file {'/srv/rails_port/config/database.yml':
+    ensure => 'file',
+    source => '/srv/rails_port/config/example.database.yml',
+    require => Mount['/srv/rails_port'],
+  }
+
+  # Populate rails_port/config/application.yml.
+  file {'/srv/rails_port/config/application.yml':
+    ensure => 'file',
+    source => '/srv/rails_port/config/example.application.yml',
+    require => Mount['/srv/rails_port'],
+  }
+  # @TODO: reconfigure the URL.
+
+
 }
