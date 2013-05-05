@@ -32,6 +32,8 @@ node osm_template {
   # Precise: PostgreSQL 9.1
   package {'postgresql': }
 
+
+
   package {'imagemagick': }
   package {'ruby-bundler': }
 
@@ -58,14 +60,15 @@ node osm_template {
   # Populate rails_port/config/database.yml.
   #
   # The databases used are:
-  # Dev:  openstreetmap
-  # Test: osm_test
-  # Prod: osm
+  #   Dev:  openstreetmap
+  #   Test: osm_test
+  #   Prod: osm
   file {'/srv/rails_port/config/database.yml':
     ensure => 'file',
     source => '/srv/rails_port/config/example.database.yml',
     require => Mount['/srv/rails_port'],
   }
+  # @TODO: create databases and populate DB credentials.
 
   # Populate rails_port/config/application.yml.
   file {'/srv/rails_port/config/application.yml':
@@ -74,6 +77,68 @@ node osm_template {
     require => Mount['/srv/rails_port'],
   }
   # @TODO: reconfigure the URL.
+
+
+
+  ###
+  # PostgreSQL configuration.
+  ###
+
+  # Create 'vagrant' superuser for easy access.
+  exec {'createuser vagrant -s':
+    user => 'postgres',
+    path => '/usr/bin',
+    # Only create the user if there isn't a vagrant user already.
+    onlyif => "[ -z `psql -tqc \"SELECT rolname FROM pg_roles WHERE rolname='vagrant';\"` ]",
+    require => Package['postgresql'],
+  }
+
+  # Create 'osm' user.
+   exec {'createuser osm -RSd':
+     user => 'postgres',
+     path => '/usr/bin',
+     # Only create the user if there isn't a vagrant user already.
+     onlyif => "[ -z `psql -tqc \"SELECT rolname FROM pg_roles WHERE rolname='osm';\"` ]",
+     require => Package['postgresql'],
+   }
+
+  # Create databases.
+  #
+  # The databases used are:
+  #   Dev:  openstreetmap
+  #   Test: osm_test
+  #   Prod: osm
+  exec {'createdb -O osm openstreetmap "OSM Dev database."':
+    user => 'postgres',
+    path => '/usr/bin',
+    # Only create the DB if it doesn't already exist.
+    onlyif => "[ -z `psql template1 -tqc \"SELECT 1 FROM pg_database WHERE datname='openstreetmap';\"` ]",
+    require => [
+      Package['postgresql'],
+      Exec['createuser osm -RSd'],
+    ],
+  }
+  exec {'createdb -O osm osm_test "OSM Test database."':
+    user => 'postgres',
+    path => '/usr/bin',
+    # Only create the DB if it doesn't already exist.
+    onlyif => "[ -z `psql template1 -tqc \"SELECT 1 FROM pg_database WHERE datname='osm_test';\"` ]",
+    require => [
+      Package['postgresql'],
+      Exec['createuser osm -RSd'],
+    ],
+  }
+  exec {'createdb -O osm osm "OSM Prod database."':
+    user => 'postgres',
+    path => '/usr/bin',
+    # Only create the DB if it doesn't already exist.
+    onlyif => "[ -z `psql template1 -tqc \"SELECT 1 FROM pg_database WHERE datname='osm';\"` ]",
+    require => [
+      Package['postgresql'],
+      Exec['createuser osm -RSd'],
+    ],
+  }
+
 
 
 }
